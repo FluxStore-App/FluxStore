@@ -95,8 +95,7 @@ final class LaunchViewController: UIViewController {
         let log = OSLog(subsystem: "com.aero.aerostore", category: "launch-ui")
         os_log(.default, log: log, "runLaunchSequence (retry #%d, skipPostLaunch=%@)", retries, String(describing: skipPostLaunchWork))
         if retries >= maxRetries {
-            os_log(.default, log: log, "Max retries reached, finishing")
-            await finishLaunching(skipPostLaunchWork: skipPostLaunchWork)
+            os_log(.default, log: log, "Max retries reached, stopping launch sequence without installing broken interface")
             return
         }
         retries += 1
@@ -113,15 +112,17 @@ final class LaunchViewController: UIViewController {
                 Task { @MainActor in
                     if let error {
                         let nsError = error as NSError
-                        if nsError.code == 134020 {
-                            os_log(.default, log: log, "CoreData error 134020 — recreating database and retrying")
+                        if self.retries < self.maxRetries && (nsError.domain == NSCocoaErrorDomain || nsError.domain == NSSQLiteErrorDomain || nsError.code == 134020) {
+                            os_log(.default, log: log, "Database error (%{public}@ code %d) — recreating database and retrying", nsError.domain, nsError.code)
                             DatabaseManager.recreateDatabase()
                             continuation.resume()
                             await self.runLaunchSequence(skipPostLaunchWork: skipPostLaunchWork)
                         } else {
                             os_log(.error, log: log, "DatabaseManager.start error (code %d): %{public}@", nsError.code, String(describing: error))
-                            await self.finishLaunching(skipPostLaunchWork: skipPostLaunchWork)
-                            await self.handleLaunchError(error, retryCallback: { await self.runLaunchSequence(skipPostLaunchWork: skipPostLaunchWork) })
+                            await self.handleLaunchError(error, retryCallback: {
+                                self.retries = 0
+                                await self.runLaunchSequence(skipPostLaunchWork: skipPostLaunchWork)
+                            })
                             continuation.resume()
                         }
                     } else {

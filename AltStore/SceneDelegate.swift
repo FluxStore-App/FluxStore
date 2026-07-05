@@ -89,8 +89,12 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate
                     DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                         Task { @MainActor in
                             guard !AppLaunchCoordinator.isMainInterfaceInstalled else { return }
-                            DatabaseManager.shared.start { _ in
+                            DatabaseManager.shared.start { error in
                                 Task { @MainActor in
+                                    guard error == nil else {
+                                        print("⚠️ SafetyNet: DB start failed, not installing main interface: \(String(describing: error))")
+                                        return
+                                    }
                                     AppLaunchCoordinator.installMainInterfaceIfNeeded(reason: "scene safety net (extended)")
                                 }
                             }

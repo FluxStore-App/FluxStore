@@ -115,43 +115,34 @@ public extension DatabaseManager
         do {
             let container = Self.shared.persistentContainer
             
-            var databaseStore = container.persistentStoreCoordinator.persistentStores.first
-            if databaseStore == nil{
-                // perform a load before acquiring the databaseStoreURL
-                Self.loadPersistentStoresSync()
-                databaseStore = container.persistentStoreCoordinator.persistentStores.first
-            }
-            
-
-            guard let databaseStore else
-            {
-                print("\nDatabase Delete request FAILED: databaseStore = nil\n")
-                return false
-            }
-
-            guard let databaseStoreURL = databaseStore.url else
-            {
-                print("\nDatabase Delete request FAILED: databaseStoreURL = nil\n")
-                return false
-            }
-            
             // Reset the managed object context
-            Self.shared.persistentContainer.viewContext.reset()
+            container.viewContext.reset()
 
             // Remove all existing persistent stores
-            for store in Self.shared.persistentContainer.persistentStoreCoordinator.persistentStores {
-                try? Self.shared.persistentContainer.persistentStoreCoordinator.remove(store)
+            for store in container.persistentStoreCoordinator.persistentStores {
+                try? container.persistentStoreCoordinator.remove(store)
             }
 
-            // Now destroy the persistent store
-            try Self.shared.persistentContainer.persistentStoreCoordinator.destroyPersistentStore(
-                at: databaseStoreURL,
-                ofType: NSSQLiteStoreType,
-                options: nil
-            )
-            
-            // just be sure
-            try? FileManager.default.removeItem(at: databaseStoreURL)
+            var candidateURLs = [URL]()
+            if let storeURL = container.persistentStoreCoordinator.persistentStores.first?.url {
+                candidateURLs.append(storeURL)
+            }
+            candidateURLs.append(PersistentContainer.defaultDirectoryURL().appendingPathComponent("AltStore.sqlite"))
+            candidateURLs.append(PersistentContainer.legacyDirectoryURL().appendingPathComponent("AltStore.sqlite"))
+
+            for url in Set(candidateURLs) {
+                try? container.persistentStoreCoordinator.destroyPersistentStore(
+                    at: url,
+                    ofType: NSSQLiteStoreType,
+                    options: nil
+                )
+                
+                let shmURL = URL(fileURLWithPath: url.path + "-shm")
+                let walURL = URL(fileURLWithPath: url.path + "-wal")
+                try? FileManager.default.removeItem(at: url)
+                try? FileManager.default.removeItem(at: shmURL)
+                try? FileManager.default.removeItem(at: walURL)
+            }
                 
             print("\nDatabase Delete: SUCCEEDED\n")
             
