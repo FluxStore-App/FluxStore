@@ -132,7 +132,14 @@ func fetchUDID() -> String? {
     return "XXXXX-XXXX-XXXXX-XXXX"
     #else
     print("[SideStore] fetchUDID() invoked")
-    return Minimuxer.fetchUDID()
+    if let udid = Minimuxer.fetchUDID() {
+        return udid
+    }
+    print("[SideStore] Minimuxer.fetchUDID() returned nil, falling back to Info.plist ALTDeviceID")
+    if let udid = Bundle.main.object(forInfoDictionaryKey: Bundle.Info.deviceID) as? String {
+        return udid
+    }
+    return nil
     #endif
 }
 
