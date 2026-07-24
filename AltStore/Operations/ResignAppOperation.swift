@@ -202,7 +202,7 @@ private extension ResignAppOperation
                 if app.isAltStoreApp
                 {
                     guard let udid = fetchUDID() else { throw OperationError.unknownUDID }
-                    guard Bundle.main.object(forInfoDictionaryKey: Bundle.Info.devicePairingString) is String else { throw OperationError.unknownUDID }
+                    // Removed strict check for devicePairingString to allow beta testing from Xcode
                     additionalValues[Bundle.Info.devicePairingString] = "<insert pairing file here>"
                     additionalValues[Bundle.Info.deviceID] = udid
                     additionalValues[Bundle.Info.serverID] = UserDefaults.standard.preferredServerID
