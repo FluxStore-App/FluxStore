@@ -213,8 +213,6 @@ final class TabBarController: UITabBarController
     {
         let appearance = UITabBarAppearance()
         appearance.configureWithDefaultBackground()
-        appearance.backgroundColor = .systemBackground
-        appearance.shadowColor = .separator
         appearance.stackedLayoutAppearance.normal.iconColor = UIColor.fluxSecondaryText
         appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
             .foregroundColor: UIColor.fluxSecondaryText,
@@ -230,42 +228,11 @@ final class TabBarController: UITabBarController
         tabBar.scrollEdgeAppearance = appearance
         tabBar.tintColor = .altPrimary
         tabBar.unselectedItemTintColor = .fluxSecondaryText
-        tabBar.isTranslucent = false
-
-        if #available(iOS 26.0, *)
-        {
-            floatingTabBarBackgroundView.isHidden = true
-            return
-        }
-
-        tabBar.backgroundImage = UIImage()
-        tabBar.shadowImage = UIImage()
-        tabBar.isTranslucent = true
-
-        floatingTabBarBackgroundView.translatesAutoresizingMaskIntoConstraints = false
-        floatingTabBarBackgroundView.isUserInteractionEnabled = false
-        tabBar.insertSubview(floatingTabBarBackgroundView, at: 0)
-        updateFloatingTabBarConstraintsIfNeeded()
     }
 
     override func viewDidLayoutSubviews()
     {
         super.viewDidLayoutSubviews()
-        updateFloatingTabBarConstraintsIfNeeded()
-    }
-
-    private func updateFloatingTabBarConstraintsIfNeeded()
-    {
-        guard floatingTabBarBackgroundView.superview === tabBar else { return }
-        NSLayoutConstraint.deactivate(floatingTabBarBackgroundConstraints)
-        floatingTabBarBackgroundConstraints = [
-            floatingTabBarBackgroundView.leadingAnchor.constraint(equalTo: tabBar.leadingAnchor),
-            floatingTabBarBackgroundView.trailingAnchor.constraint(equalTo: tabBar.trailingAnchor),
-            floatingTabBarBackgroundView.topAnchor.constraint(equalTo: tabBar.topAnchor),
-            floatingTabBarBackgroundView.bottomAnchor.constraint(equalTo: tabBar.bottomAnchor),
-        ]
-        NSLayoutConstraint.activate(floatingTabBarBackgroundConstraints)
-        floatingTabBarBackgroundView.contentView.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.94)
     }
 
     override func viewDidAppear(_ animated: Bool)
