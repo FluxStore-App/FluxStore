@@ -462,7 +462,10 @@ final class PairingFileManager {
             try minimuxerStartWithLogger(pairingString, documentsDirectory, UserDefaults.standard.isMinimuxerConsoleLoggingEnabled)
             startAutoMounter(documentsDirectory)
         } catch {
-            try? FileManager.default.removeItem(at: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName))
+            // NOTE: Do NOT delete the pairing file here. A startup failure is usually
+            // transient (VPN not ready, device temporarily unreachable) and silently
+            // wiping the pairing file forces the user to re-import it every time.
+            print("[AeroStore] minimuxer startup error (pairing file preserved): \(error)")
             guard let presenter else { return }
             let alert = UIAlertController(
                 title: String(format: NSLocalizedString("Error launching %@", comment: ""), Bundle.main.altAppDisplayName),
@@ -487,10 +490,14 @@ final class PairingFileImportCoordinator: NSObject, UIDocumentPickerDelegate {
         do {
             let data = try Data(contentsOf: url)
             guard let pairingString = String(data: data, encoding: .utf8) else { return }
+            // Save the pairing file FIRST before attempting to start minimuxer.
+            // startMinimuxerIfPossible must NEVER delete this file on failure.
             try pairingString.write(to: FileManager.default.documentsDirectory.appendingPathComponent(pairingFileName), atomically: true, encoding: .utf8)
             UserDefaults.standard.set(false, forKey: aeroPreviewWithoutPairingKey)
             PairingFileManager.shared.startMinimuxerIfPossible(pairingString, presenter: presentingViewController)
-        } catch {}
+        } catch {
+            print("[AeroStore] Failed to import pairing file: \(error)")
+        }
         controller.dismiss(animated: true)
     }
 
