@@ -205,8 +205,8 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                             print("Notifications are enabled")
 
                             let content = UNMutableNotificationContent()
-                            content.title = "Refreshing..."
-                            content.body = "aerostore will automatically move to the homescreen to finish refreshing!"
+                            content.title = "Refresh Downloaded!"
+                            content.body = "Please manually swipe up to go to the home screen to allow iOS to finish replacing the app!"
                             let notification = UNNotificationRequest(identifier: Bundle.Info.appbundleIdentifier + ".FinishRefreshNotification", content: content, trigger: UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false))
                             UNUserNotificationCenter.current().add(notification)
                             break
@@ -221,7 +221,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                                     UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in
                                         print("Cell OFF Shortcut finished execution.")}
                                 }
-                                UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
+                                // UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                             }))
 
                             DispatchQueue.main.async {
@@ -241,7 +241,7 @@ final class InstallAppOperation: ResultOperation<InstalledApp>
                     if self.context.shouldTurnOffData {
                         UIApplication.shared.open(shortcutURLonDelay, options: [:]) { _ in print("Cell OFF Shortcut finished execution.")}
                     }
-                    UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
+                    // UIApplication.shared.perform(#selector(NSXPCConnection.suspend))
                 }
             }
             
