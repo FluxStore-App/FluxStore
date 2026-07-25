@@ -105,24 +105,48 @@ jobs:
 
           cp -R "$APP/" "$FW/"
 
-          EXEC=$(defaults read "${FW}/Info" CFBundleExecutable 2>/dev/null || echo "AeroStore")
-          if [ -f "${FW}/${EXEC}" ]; then
+          # Detect the actual executable name from the bundle
+          EXEC=$(defaults read "${FW}/Info" CFBundleExecutable 2>/dev/null || /usr/libexec/PlistBuddy -c "Print :CFBundleExecutable" "${FW}/Info.plist" 2>/dev/null || echo "AeroStore")
+          echo "Detected executable: $EXEC"
+
+          if [ -f "${FW}/${EXEC}" ] && [ "$EXEC" != "AeroStoreApp" ]; then
             mv "${FW}/${EXEC}" "${FW}/AeroStoreApp"
+            echo "Renamed executable: $EXEC -> AeroStoreApp"
+          elif [ -f "${FW}/AeroStoreApp" ]; then
+            echo "Executable already named AeroStoreApp"
+          else
+            echo "::error::Could not find executable '${EXEC}' in framework bundle"
+            ls -la "$FW"
+            exit 1
           fi
 
-          plutil -replace CFBundleExecutable -string "AeroStoreApp" "${FW}/Info.plist" 2>/dev/null || true
-          plutil -replace CFBundleName -string "AeroStoreApp" "${FW}/Info.plist" 2>/dev/null || true
-          plutil -replace CFBundlePackageType -string "FMWK" "${FW}/Info.plist" 2>/dev/null || true
-          cp "${ROOT}/LiveContainer/.github/sidelc/LCAppInfo.plist" "${FW}/LCAppInfo.plist" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleExecutable AeroStoreApp" "${FW}/Info.plist" 2>/dev/null || \
+            plutil -replace CFBundleExecutable -string "AeroStoreApp" "${FW}/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundleName AeroStoreApp" "${FW}/Info.plist" 2>/dev/null || \
+            plutil -replace CFBundleName -string "AeroStoreApp" "${FW}/Info.plist" || true
+          /usr/libexec/PlistBuddy -c "Set :CFBundlePackageType FMWK" "${FW}/Info.plist" 2>/dev/null || \
+            plutil -replace CFBundlePackageType -string "FMWK" "${FW}/Info.plist" || true
 
-          curl -sSL -o "${ROOT}/build/dylibify" "https://github.com/LiveContainer/SideStore/releases/download/dylibify/dylibify" || true
-          if [ -f "${ROOT}/build/dylibify" ]; then
-            chmod +x "${ROOT}/build/dylibify"
-            "${ROOT}/build/dylibify" "${FW}/AeroStoreApp" "${FW}/AeroStoreApp.dylib"
+          cp "${ROOT}/LiveContainer/.github/sidelc/LCAppInfo.plist" "${FW}/LCAppInfo.plist" 2>/dev/null || \
+            echo "LCAppInfo.plist not found, skipping"
+
+          # Download dylibify — non-fatal if unavailable
+          DYLIBIFY="${ROOT}/build/dylibify"
+          curl -sSL --max-time 30 -o "$DYLIBIFY" \
+            "https://github.com/LiveContainer/SideStore/releases/download/dylibify/dylibify" || true
+
+          if [ -f "$DYLIBIFY" ] && [ -s "$DYLIBIFY" ]; then
+            chmod +x "$DYLIBIFY"
+            echo "Running dylibify on AeroStoreApp..."
+            "$DYLIBIFY" "${FW}/AeroStoreApp" "${FW}/AeroStoreApp.dylib"
             rm -f "${FW}/AeroStoreApp"
             mv "${FW}/AeroStoreApp.dylib" "${FW}/AeroStoreApp"
+            echo "dylibify completed successfully"
+          else
+            echo "::warning::dylibify not available — skipping dylib conversion. The embedded app may not load correctly in LiveContainer."
           fi
 
+          echo "=== Framework contents ==="
           ls -la "$FW"
 
       - name: Build LiveContainer
