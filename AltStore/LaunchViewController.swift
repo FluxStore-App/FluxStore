@@ -485,6 +485,9 @@ final class PairingFileManager {
         defer { try? FileManager.default.removeItem(at: minimuxerSentinel) }
         // ──────────────────────────────────────────────────────────────────────────
 
+        let stikJITPairingURL = FileManager.default.documentsDirectory.appendingPathComponent("rp_pairing_file.plist")
+        try? pairingString.write(to: stikJITPairingURL, atomically: true, encoding: .utf8)
+
         do {
             retargetUsbmuxdAddr()
             let documentsDirectory = FileManager.default.documentsDirectory.absoluteString

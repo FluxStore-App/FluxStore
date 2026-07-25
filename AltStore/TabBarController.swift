@@ -5,6 +5,7 @@
 
 import UIKit
 import AltStoreCore
+import SwiftUI
 
 extension TabBarController
 {
@@ -12,6 +13,7 @@ extension TabBarController
     {
         case myApps
         case browse
+        case jit
         case settings
     }
 }
@@ -86,6 +88,13 @@ final class TabBarController: UITabBarController
             let browseNavigationController = Self.instantiateBrowseNavigationController(main: main)
             let myAppsNavigationController = Self.instantiateMyAppsNavigationController(main: main)
 
+            let jitVC = UIHostingController(rootView: HomeView())
+            jitVC.title = "JIT"
+            let jitNavigationController = UINavigationController(rootViewController: jitVC)
+            jitNavigationController.navigationBar.prefersLargeTitles = true
+            jitNavigationController.tabBarItem.title = "JIT"
+            jitNavigationController.tabBarItem.image = UIImage(systemName: "bolt.fill")
+
             guard let settingsNavigationController = settingsStoryboard.instantiateInitialViewController() as? UINavigationController else {
                 print("❌ TabBarController: Settings storyboard failed to load")
                 // Create fallback settings controller
@@ -95,7 +104,7 @@ final class TabBarController: UITabBarController
                 let fallbackSettingsNav = UINavigationController(rootViewController: settingsVC)
                 fallbackSettingsNav.tabBarItem.title = NSLocalizedString("Settings", comment: "")
                 fallbackSettingsNav.tabBarItem.image = UIImage(systemName: "gearshape.fill")
-                viewControllers = [myAppsNavigationController, browseNavigationController, fallbackSettingsNav]
+                viewControllers = [myAppsNavigationController, browseNavigationController, jitNavigationController, fallbackSettingsNav]
                 selectedIndex = Tab.myApps.rawValue
                 return
             }
@@ -107,6 +116,7 @@ final class TabBarController: UITabBarController
             viewControllers = [
                 myAppsNavigationController,
                 browseNavigationController,
+                jitNavigationController,
                 settingsNavigationController,
             ]
             selectedIndex = Tab.myApps.rawValue
