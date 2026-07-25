@@ -130,10 +130,10 @@ jobs:
           cp "${ROOT}/LiveContainer/.github/sidelc/LCAppInfo.plist" "${FW}/LCAppInfo.plist" 2>/dev/null || \
             echo "LCAppInfo.plist not found, skipping"
 
-          # Patch Mach-O header: change MH_EXECUTE (0x2) to MH_DYLIB (0x6) so
-          # LiveContainer can dlopen() the binary as a dylib.
-          # This is equivalent to what dylibify does.
-          python3 scripts/ci/patch_macho_dylib.py "${FW}/AeroStoreApp"
+          # Patch Mach-O header: change MH_EXECUTE to MH_DYLIB and insert LC_ID_DYLIB
+          # using the C program from LiveContainer.
+          clang "${ROOT}/LiveContainer/.github/sidelc/lc_dylibify.c" -o "${ROOT}/build/lc_dylibify"
+          "${ROOT}/build/lc_dylibify" "${FW}/AeroStoreApp"
 
           echo "=== Framework contents ==="
           ls -la "$FW"
