@@ -283,25 +283,7 @@ extension FileManager {
     }
 }
 
-extension UIDocumentPickerViewController {
-    // NOTE: This method is swizzled with init(forOpeningContentTypes:asCopy:) in
-    // FluxStikJITHostBootstrap.prepareIntegrations() to force asCopy:true on every
-    // system-created document picker (e.g. SwiftUI .fileImporter).
-    //
-    // After method_exchangeImplementations:
-    //   • Calling the original init selector runs this body (with asCopy forced to true).
-    //   • Calling fix_initForOpeningContentTypes:asCopy: runs the original init body.
-    //
-    // The @discardableResult suppresses the Swift compiler warning about the
-    // returned value being unused when the method is dispatched as an init IMP.
-    @objc @discardableResult
-    func fix_init(forOpeningContentTypes contentTypes: [UTType], asCopy: Bool) -> UIDocumentPickerViewController {
-        // After the swizzle this call resolves to the ORIGINAL init IMP via
-        // objc_msgSend on the fix_initForOpeningContentTypes:asCopy: selector.
-        // Swift dispatches @objc methods dynamically, so this is NOT infinite recursion.
-        return fix_init(forOpeningContentTypes: contentTypes, asCopy: true)
-    }
-}
+
 
 extension Notification.Name {
     static let pairingFileImported = Notification.Name("PairingFileImported")

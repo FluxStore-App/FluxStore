@@ -145,15 +145,7 @@ enum FluxStikJITHostBootstrap {
             BackgroundAudioManager.shared.start()
             os_log(.default, log: log, "BackgroundAudioManager started")
         }
-        os_log(.default, log: log, "Swizzling UIDocumentPickerViewController...")
-        let fixSelector = NSSelectorFromString("fix_initForOpeningContentTypes:asCopy:")
-        if let fixMethod = class_getInstanceMethod(UIDocumentPickerViewController.self, fixSelector),
-           let origMethod = class_getInstanceMethod(UIDocumentPickerViewController.self, #selector(UIDocumentPickerViewController.init(forOpeningContentTypes:asCopy:))) {
-            method_exchangeImplementations(origMethod, fixMethod)
-            os_log(.default, log: log, "UIDocumentPicker swizzled")
-        } else {
-            os_log(.default, log: log, "UIDocumentPicker swizzle skipped (fix method not found)")
-        }
+        // Removed dangerous UIDocumentPickerViewController swizzle which causes instant crashes on iOS 27
         os_log(.default, log: log, "prepareIntegrations - EXIT")
     }
 
