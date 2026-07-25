@@ -88,11 +88,6 @@ final class TabBarController: UITabBarController
             let browseNavigationController = Self.instantiateBrowseNavigationController(main: main)
             let myAppsNavigationController = Self.instantiateMyAppsNavigationController(main: main)
 
-            // JIT requires LocalDevVPN and network entitlements that are not available
-            // when AeroStore is embedded inside LiveContainer. Detect this and omit the tab.
-            let isRunningInLiveContainer = ProcessInfo.processInfo.environment["LC_HOME_URL"] != nil
-                || Bundle.main.bundlePath.contains("LiveContainer")
-
             guard let settingsNavigationController = settingsStoryboard.instantiateInitialViewController() as? UINavigationController else {
                 print("❌ TabBarController: Settings storyboard failed to load")
                 let settingsVC = UIViewController()
@@ -101,12 +96,9 @@ final class TabBarController: UITabBarController
                 let fallbackSettingsNav = UINavigationController(rootViewController: settingsVC)
                 fallbackSettingsNav.tabBarItem.title = NSLocalizedString("Settings", comment: "")
                 fallbackSettingsNav.tabBarItem.image = UIImage(systemName: "gearshape.fill")
-                if isRunningInLiveContainer {
-                    viewControllers = [myAppsNavigationController, browseNavigationController, fallbackSettingsNav]
-                } else {
-                    let jitNavigationController = makeJITNavigationController()
-                    viewControllers = [myAppsNavigationController, browseNavigationController, jitNavigationController, fallbackSettingsNav]
-                }
+                
+                let jitNavigationController = makeJITNavigationController()
+                viewControllers = [myAppsNavigationController, browseNavigationController, jitNavigationController, fallbackSettingsNav]
                 selectedIndex = Tab.myApps.rawValue
                 return
             }
@@ -115,22 +107,13 @@ final class TabBarController: UITabBarController
             settingsNavigationController.tabBarItem.title = NSLocalizedString("Settings", comment: "")
             settingsNavigationController.tabBarItem.image = UIImage(systemName: "gearshape.fill")
 
-            if isRunningInLiveContainer {
-                print("ℹ️ TabBarController: Running inside LiveContainer — JIT tab hidden (requires VPN entitlements)")
-                viewControllers = [
-                    myAppsNavigationController,
-                    browseNavigationController,
-                    settingsNavigationController,
-                ]
-            } else {
-                let jitNavigationController = makeJITNavigationController()
-                viewControllers = [
-                    myAppsNavigationController,
-                    browseNavigationController,
-                    jitNavigationController,
-                    settingsNavigationController,
-                ]
-            }
+            let jitNavigationController = makeJITNavigationController()
+            viewControllers = [
+                myAppsNavigationController,
+                browseNavigationController,
+                jitNavigationController,
+                settingsNavigationController,
+            ]
             selectedIndex = Tab.myApps.rawValue
             print("✅ TabBarController: Primary tabs configured successfully")
         } catch {
