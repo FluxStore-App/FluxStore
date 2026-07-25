@@ -64,5 +64,5 @@
     branch = master
 [submodule "LiveContainer"]
 	path = LiveContainer
-	url = https://github.com/Leviidev/LiveContainer.git
+	url = https://github.com/CherryFlavoredBleach/LiveContainer.git
 	branch = main
