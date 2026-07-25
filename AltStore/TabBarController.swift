@@ -88,23 +88,25 @@ final class TabBarController: UITabBarController
             let browseNavigationController = Self.instantiateBrowseNavigationController(main: main)
             let myAppsNavigationController = Self.instantiateMyAppsNavigationController(main: main)
 
-            let jitVC = UIHostingController(rootView: HomeView())
-            jitVC.title = "JIT"
-            let jitNavigationController = UINavigationController(rootViewController: jitVC)
-            jitNavigationController.navigationBar.prefersLargeTitles = true
-            jitNavigationController.tabBarItem.title = "JIT"
-            jitNavigationController.tabBarItem.image = UIImage(systemName: "bolt.fill")
+            // JIT requires LocalDevVPN and network entitlements that are not available
+            // when AeroStore is embedded inside LiveContainer. Detect this and omit the tab.
+            let isRunningInLiveContainer = ProcessInfo.processInfo.environment["LC_HOME_URL"] != nil
+                || Bundle.main.bundlePath.contains("LiveContainer")
 
             guard let settingsNavigationController = settingsStoryboard.instantiateInitialViewController() as? UINavigationController else {
                 print("❌ TabBarController: Settings storyboard failed to load")
-                // Create fallback settings controller
                 let settingsVC = UIViewController()
                 settingsVC.title = NSLocalizedString("Settings", comment: "")
                 settingsVC.view.backgroundColor = .systemBackground
                 let fallbackSettingsNav = UINavigationController(rootViewController: settingsVC)
                 fallbackSettingsNav.tabBarItem.title = NSLocalizedString("Settings", comment: "")
                 fallbackSettingsNav.tabBarItem.image = UIImage(systemName: "gearshape.fill")
-                viewControllers = [myAppsNavigationController, browseNavigationController, jitNavigationController, fallbackSettingsNav]
+                if isRunningInLiveContainer {
+                    viewControllers = [myAppsNavigationController, browseNavigationController, fallbackSettingsNav]
+                } else {
+                    let jitNavigationController = makeJITNavigationController()
+                    viewControllers = [myAppsNavigationController, browseNavigationController, jitNavigationController, fallbackSettingsNav]
+                }
                 selectedIndex = Tab.myApps.rawValue
                 return
             }
@@ -113,17 +115,37 @@ final class TabBarController: UITabBarController
             settingsNavigationController.tabBarItem.title = NSLocalizedString("Settings", comment: "")
             settingsNavigationController.tabBarItem.image = UIImage(systemName: "gearshape.fill")
 
-            viewControllers = [
-                myAppsNavigationController,
-                browseNavigationController,
-                jitNavigationController,
-                settingsNavigationController,
-            ]
+            if isRunningInLiveContainer {
+                print("ℹ️ TabBarController: Running inside LiveContainer — JIT tab hidden (requires VPN entitlements)")
+                viewControllers = [
+                    myAppsNavigationController,
+                    browseNavigationController,
+                    settingsNavigationController,
+                ]
+            } else {
+                let jitNavigationController = makeJITNavigationController()
+                viewControllers = [
+                    myAppsNavigationController,
+                    browseNavigationController,
+                    jitNavigationController,
+                    settingsNavigationController,
+                ]
+            }
             selectedIndex = Tab.myApps.rawValue
             print("✅ TabBarController: Primary tabs configured successfully")
         } catch {
             print("❌ TabBarController: Failed to configure primary tabs: \(error)")
         }
+    }
+
+    private func makeJITNavigationController() -> UINavigationController {
+        let jitVC = UIHostingController(rootView: HomeView())
+        jitVC.title = "JIT"
+        let jitNavigationController = UINavigationController(rootViewController: jitVC)
+        jitNavigationController.navigationBar.prefersLargeTitles = true
+        jitNavigationController.tabBarItem.title = "JIT"
+        jitNavigationController.tabBarItem.image = UIImage(systemName: "bolt.fill")
+        return jitNavigationController
     }
 
     private static func instantiateBrowseNavigationController(main: UIStoryboard) -> UINavigationController

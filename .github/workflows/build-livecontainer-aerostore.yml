@@ -130,21 +130,45 @@ jobs:
           cp "${ROOT}/LiveContainer/.github/sidelc/LCAppInfo.plist" "${FW}/LCAppInfo.plist" 2>/dev/null || \
             echo "LCAppInfo.plist not found, skipping"
 
-          # Download dylibify — non-fatal if unavailable
-          DYLIBIFY="${ROOT}/build/dylibify"
-          curl -sSL --max-time 30 -o "$DYLIBIFY" \
-            "https://github.com/LiveContainer/SideStore/releases/download/dylibify/dylibify" || true
+          # Patch Mach-O header: change MH_EXECUTE (0x2) to MH_DYLIB (0x6) so
+          # LiveContainer can dlopen() the binary as a dylib.
+          # This is equivalent to what dylibify does — no external download needed.
+          python3 - "${FW}/AeroStoreApp" << 'PYEOF'
+import sys, struct
 
-          if [ -f "$DYLIBIFY" ] && [ -s "$DYLIBIFY" ]; then
-            chmod +x "$DYLIBIFY"
-            echo "Running dylibify on AeroStoreApp..."
-            "$DYLIBIFY" "${FW}/AeroStoreApp" "${FW}/AeroStoreApp.dylib"
-            rm -f "${FW}/AeroStoreApp"
-            mv "${FW}/AeroStoreApp.dylib" "${FW}/AeroStoreApp"
-            echo "dylibify completed successfully"
-          else
-            echo "::warning::dylibify not available — skipping dylib conversion. The embedded app may not load correctly in LiveContainer."
-          fi
+path = sys.argv[1]
+with open(path, "r+b") as f:
+    magic = struct.unpack("<I", f.read(4))[0]
+    f.seek(0)
+    if magic == 0xFEEDFACF:   # MH_MAGIC_64 (little-endian arm64)
+        data = bytearray(f.read())
+        # filetype is at offset 12 (after magic[4], cputype[4], cpusubtype[4])
+        ft = struct.unpack_from("<I", data, 12)[0]
+        if ft == 0x2:  # MH_EXECUTE
+            struct.pack_into("<I", data, 12, 0x6)  # MH_DYLIB
+            f.seek(0); f.write(data)
+            print(f"Patched {path}: MH_EXECUTE -> MH_DYLIB")
+        elif ft == 0x6:
+            print(f"{path} already MH_DYLIB, skipping")
+        else:
+            print(f"Unexpected filetype 0x{ft:x} in {path}, skipping")
+    elif magic == 0xBEBAFECA:  # FAT binary
+        print("FAT binary detected — patching each slice")
+        data = bytearray(f.read())
+        nfat = struct.unpack_from(">I", data, 4)[0]
+        for i in range(nfat):
+            base = 8 + i * 20
+            offset = struct.unpack_from(">I", data, base + 8)[0]
+            sl_magic = struct.unpack_from("<I", data, offset)[0]
+            if sl_magic == 0xFEEDFACF:
+                ft = struct.unpack_from("<I", data, offset + 12)[0]
+                if ft == 0x2:
+                    struct.pack_into("<I", data, offset + 12, 0x6)
+                    print(f"  Slice {i}: patched MH_EXECUTE -> MH_DYLIB")
+        f.seek(0); f.write(data)
+    else:
+        print(f"Unknown magic 0x{magic:08x}, skipping patch")
+PYEOF
 
           echo "=== Framework contents ==="
           ls -la "$FW"
