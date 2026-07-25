@@ -31,6 +31,13 @@ enum PairingFileStore {
         let destination = url
         guard !fileManager.fileExists(atPath: destination.path),
               fileManager.fileExists(atPath: legacyURL.path) else {
+            // Check if AeroStore's pairing file exists and copy it if StikJIT's doesn't exist
+            if !fileManager.fileExists(atPath: destination.path) {
+                let aerostoreURL = URL.documentsDir.appendingPathComponent("ALTPairingFile.mobiledevicepairing")
+                if fileManager.fileExists(atPath: aerostoreURL.path) {
+                    try? fileManager.copyItem(at: aerostoreURL, to: destination)
+                }
+            }
             return destination
         }
 
@@ -40,6 +47,14 @@ enum PairingFileStore {
             if let data = try? Data(contentsOf: legacyURL) {
                 try? data.write(to: destination, options: .atomic)
                 try? fileManager.removeItem(at: legacyURL)
+            }
+        }
+
+        // Final fallback check for AeroStore's file
+        if !fileManager.fileExists(atPath: destination.path) {
+            let aerostoreURL = URL.documentsDir.appendingPathComponent("ALTPairingFile.mobiledevicepairing")
+            if fileManager.fileExists(atPath: aerostoreURL.path) {
+                try? fileManager.copyItem(at: aerostoreURL, to: destination)
             }
         }
 
