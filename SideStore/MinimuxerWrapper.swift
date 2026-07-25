@@ -224,7 +224,7 @@ extension MinimuxerError: @retroactive LocalizedError {
         case .CreateAfc:
             return createService(name: "AFC")
         case .RwAfc:
-            return NSLocalizedString("AFC was unable to manage files on the device.", comment: "")
+            return NSLocalizedString("AFC was unable to manage files on the device. This usually means your pairing file is invalid or expired. Please generate a new pairing file using your PC or iLoader and import it.", comment: "")
         case .InstallApp(let message):
             return NSLocalizedString("Unable to install the app: \(message)", comment: "")
         case .UninstallApp:
