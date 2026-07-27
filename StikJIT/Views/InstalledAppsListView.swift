@@ -342,7 +342,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
                 }
             }
             .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
+            .hideScrollContentBackground()
 
         case .launch:
             List {
@@ -406,7 +406,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
                 }
             }
             .listStyle(.insetGrouped)
-            .scrollContentBackground(.hidden)
+            .hideScrollContentBackground()
         }
     }
 
