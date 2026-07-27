@@ -164,6 +164,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
     var body: some View {
         NavigationView {
             tabContent(for: selectedTab)
+                .background(Color("Background").ignoresSafeArea())
                 .transition(.opacity)
                 .transaction { t in t.disablesAnimations = true }
                 .navigationTitle(selectedTab == .debuggable ? "Enable JIT".localized : "Launch Apps".localized)
@@ -341,6 +342,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
                 }
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
 
         case .launch:
             List {
@@ -404,6 +406,7 @@ private enum AppListTab: Int, CaseIterable, Identifiable {
                 }
             }
             .listStyle(.insetGrouped)
+            .scrollContentBackground(.hidden)
         }
     }
 
